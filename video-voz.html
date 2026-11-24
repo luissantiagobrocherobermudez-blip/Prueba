@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voz clonada</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
+canvas{height:100vh;max-width:100vw;aspect-ratio:9/16;cursor:pointer}
+</style></head><body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d'),W=1080,H=1920,D=36;
+const F='"DejaVu Sans","Segoe UI",Arial,sans-serif',M='"DejaVu Sans Mono",Consolas,monospace';
+const CY='#19e6ff',RD='#ff4d5e',GR='#3ee08a',YL='#ffd76a';
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),pr=(t,a,b)=>cl((t-a)/(b-a)),eo=x=>1-Math.pow(1-x,3);
+const rnd=i=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)};
+function T(s,x,y,size,col,o={}){X.save();X.font=(o.w||'700')+' '+size+'px '+(o.f||F);X.textAlign=o.a||'center';X.textBaseline='middle';
+ if(o.g){X.shadowColor=o.g;X.shadowBlur=o.gb||25}X.fillStyle=col;X.fillText(s,x,y);X.restore();}
+function rr(x,y,w,h,r){X.beginPath();X.roundRect(x,y,w,h,r);}
+
+// ---- guion y subtítulos karaoke ----
+const SC=[[0.3,3.9,'Tu mamá puede recibir una llamada con TU voz pidiendo dinero.'],
+ [4.2,10.8,'Hoy existen estafas que imitan voces con inteligencia artificial.'],
+ [11.2,17.8,'Te piden dinero urgente, con miedo y con prisa.'],
+ [18.2,25.6,'Qué hacer: cuelga y llama tú al número real de tu hijo.'],
+ [26.0,31.6,'Acuerden una palabra clave familiar que solo ustedes conozcan.'],
+ [32.0,35.7,'Elíjanla hoy y manda este video a tu familia.']];
+const KEY=/^(TU|voz|imitan|urgente|prisa|cuelga|llama|real|palabra|clave|hoy)/i;
+const WORDS=[];SC.forEach(([a,b,s])=>{const w=s.split(' '),dt=(b-a)/w.length;
+ for(let i=0;i<w.length;i+=5){const ch=w.slice(i,i+5).map((x,j)=>({s:x,t:a+(i+j)*dt}));ch.end=a+Math.min(w.length,i+5)*dt;WORDS.push(ch);}});
+function captions(t){const ch=WORDS.find((c,i)=>t>=c[0].t-.05&&(t<c.end+.15||(WORDS[i+1]&&t<WORDS[i+1][0].t-.05&&t<c.end+.6)));if(!ch)return;
+ X.save();X.font='700 58px '+F;const sp=16,ws=ch.map(w=>X.measureText(w.s).width);
+ let lines=[[]],lw=[0];ch.forEach((w,i)=>{const L=lines.length-1;if(lw[L]+ws[i]>900&&lines[L].length){lines.push([]);lw.push(0);}lines[lines.length-1].push(i);lw[lines.length-1]+=ws[i]+sp;});
+ lines.forEach((ln,li)=>{let x=540-(lw[li]-sp)/2,y=200+li*80;ln.forEach(i=>{const w=ch[i],on=t>=w.t,cur=on&&(i==ch.length-1?t<ch.end:t<ch[i+1].t);
+  X.globalAlpha=on?1:.35;
+  if(cur){X.lineWidth=4;X.strokeStyle='#fff';X.strokeRect(x-8,y-38,ws[i]+16,76);X.fillStyle='#fff';[[x-8,y-38],[x+ws[i]+8,y-38],[x-8,y+38],[x+ws[i]+8,y+38]].forEach(([a,b])=>X.fillRect(a-6,b-6,12,12));}
+  T(w.s,x,y,58,on&&KEY.test(w.s)?YL:'#fff',{a:'left',g:'rgba(0,0,0,.6)',gb:12});x+=ws[i]+sp;});});X.restore();}
+
+// ---- fondo ----
+function bg(t,red){X.fillStyle='#04070e';X.fillRect(0,0,W,H);
+ const g=X.createRadialGradient(540,1000,50,540,1000,1100);g.addColorStop(0,red?'rgba(255,50,70,.2)':'rgba(25,200,255,.15)');g.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=g;X.fillRect(0,0,W,H);
+ X.save();X.strokeStyle=red?'rgba(255,60,80,.18)':'rgba(25,230,255,.15)';X.lineWidth=2;
+ for(let i=0;i<20;i++){const z=i+(t*.8)%1,y=1400+z*z*1.3;if(y>H)break;X.globalAlpha=cl(z/6);X.beginPath();X.moveTo(0,y);X.lineTo(W,y);X.stroke();}
+ X.globalAlpha=.7;for(let i=-12;i<=12;i++){X.beginPath();X.moveTo(540+i*18,1400);X.lineTo(540+i*260,H);X.stroke();}X.restore();
+ X.save();X.font='22px '+M;X.textAlign='center';for(let i=0;i<18;i++){const y0=((rnd(i+50)*H+t*(120+rnd(i)*200))%(H+400))-300;for(let j=0;j<10;j++){X.fillStyle=`rgba(40,255,150,${.02+.014*j})`;X.fillText(rnd(i*31+j+Math.floor(t*6))>.5?'1':'0',30+i*60,y0+j*28);}}X.restore();}
+function hud(t){X.fillStyle='rgba(25,230,255,.25)';X.fillRect(0,0,W,8);X.fillStyle=CY;X.fillRect(0,0,W*t/D,8);
+ X.strokeStyle='rgba(25,230,255,.55)';X.lineWidth=4;[[40,40,1,1],[1040,40,-1,1],[40,1880,1,-1],[1040,1880,-1,-1]].forEach(([x,y,a,b])=>{X.beginPath();X.moveTo(x,y+60*b);X.lineTo(x,y);X.lineTo(x+60*a,y);X.stroke();});
+ T('SEC-ALERT // ESTAFAS DE VOZ',540,1850,22,'rgba(150,200,220,.5)',{f:M,w:'400'});T('@tu_usuario',1000,1790,26,'rgba(255,255,255,.7)',{a:'right'});}
+
+// ---- elementos ----
+function card(x,y,w,h,a,b,t,draw,col='rgba(255,255,255,.14)'){const p=eo(pr(t,a,a+.5)),q=1-eo(pr(t,b-.4,b)),k=Math.min(p,q);if(k<=0)return;
+ X.save();X.globalAlpha=k;X.translate(0,(1-p)*60);X.shadowColor='rgba(0,0,0,.6)';X.shadowBlur=40;rr(x,y,w,h,30);X.fillStyle='rgba(12,16,32,.93)';X.fill();X.shadowBlur=0;X.lineWidth=3;X.strokeStyle=col;X.stroke();draw(x,y,w,h);X.restore();}
+function wave(x,y,w,h,t,col,amp=1,seed=0){X.save();X.fillStyle=col;const n=44;for(let i=0;i<n;i++){const v=(.25+.75*Math.abs(Math.sin(t*7+i*.7+seed)*Math.sin(t*3+i*.31)))*amp;rr(x+i*(w/n),y-h*v/2,w/n-4,h*v,4);X.fill();}X.restore();}
+function chip(s,x,y,col,size=26){X.save();X.font='800 '+size+'px '+F;const w=X.measureText(s).width+46,h=size*1.9;rr(x-w/2,y-h/2,w,h,h/2);X.fillStyle=col+'2a';X.fill();X.lineWidth=3;X.strokeStyle=col;X.stroke();X.restore();T(s,x,y+1,size,col);}
+function pop(t,a,f){const p=eo(pr(t,a,a+.4));if(p<=0)return;X.save();X.globalAlpha=p;f(p);X.restore();}
+function avatar(x,y,r,col,s){X.beginPath();X.arc(x,y,r,0,7);X.fillStyle=col;X.fill();T(s,x,y+2,r*.9,'#fff',{w:'900'});}
+
+function scenes(t){
+ // 1: llamada entrante (0.3-4.2)
+ card(130,520,820,760,.1,4.3,t,(x,y,w,h)=>{T('Llamada entrante',540,y+60,30,'#9aa3c7',{w:'600'});
+  const r=1+.06*Math.sin(t*10);X.save();X.translate(540,y+230);X.scale(r,r);avatar(0,0,90,'#3b4bd1','HIJO');X.restore();
+  for(let k=0;k<3;k++){const p=(t*1.2+k/3)%1;X.beginPath();X.arc(540,y+230,95+p*110,0,7);X.strokeStyle=`rgba(25,230,255,${1-p})`;X.lineWidth=4;X.stroke();}
+  T('Mi hijo',540,y+415,56,'#fff',{w:'800'});T('Número desconocido',540,y+470,28,YL,{w:'600'});
+  wave(190,y+540,700,80,t,'rgba(25,230,255,.8)');
+  X.beginPath();X.arc(300,y+675,48,0,7);X.fillStyle=RD;X.fill();X.beginPath();X.arc(780,y+675,48,0,7);X.fillStyle=GR;X.fill();
+  pop(t,2.4,()=>chip('⚠ NO ES TU HIJO',540,y+h+60,RD,32));},'rgba(25,230,255,.4)');
+ // 2: clonación (4.2-11)
+ card(110,520,860,820,4.4,11.2,t,(x,y,w)=>{T('Cómo imitan una voz (idea general)',540,y+55,28,'#9aa3c7',{w:'600'});
+  X.save();rr(x+40,y+100,360,190,24);X.fillStyle='rgba(255,255,255,.05)';X.fill();X.restore();
+  T('Audio real',x+220,y+135,26,GR,{w:'700'});wave(x+60,y+215,320,90,t,GR,pr(t,4.8,5.6));
+  T('Pocos segundos de tu voz',x+220,y+330,24,'#cfd6f2',{w:'600'});T('en redes o videos',x+220,y+362,24,'#cfd6f2',{w:'600'});
+  const a=pr(t,6,7);X.save();X.globalAlpha=a;X.strokeStyle=CY;X.lineWidth=6;X.setLineDash([16,12]);X.lineDashOffset=-t*60;X.beginPath();X.moveTo(x+410,y+195);X.lineTo(x+450,y+195);X.stroke();X.restore();
+  X.save();X.globalAlpha=a;rr(x+450,y+100,350,190,24);X.fillStyle='rgba(255,77,94,.1)';X.fill();X.strokeStyle=RD;X.lineWidth=3;X.stroke();X.restore();
+  if(a>0){X.globalAlpha=a;T('IA',x+625,y+135,26,RD,{w:'900'});wave(x+470,y+215,310,90,t+9,RD,pr(t,7,8),2);T('Voz imitada',x+625,y+330,24,'#cfd6f2',{w:'600'});X.globalAlpha=1;}
+  pop(t,8.4,()=>{rr(x+60,y+450,w-120,150,26);X.fillStyle='rgba(255,215,106,.1)';X.fill();X.lineWidth=3;X.strokeStyle=YL;X.stroke();
+   T('Puede sonar muy parecido…',540,y+500,34,'#fff',{w:'800'});T('pero no es tu familiar',540,y+555,34,YL,{w:'800',g:YL});});
+  pop(t,9.6,()=>T('La voz ya no basta para confiar',540,y+690,30,RD,{w:'800'}));},'rgba(255,77,94,.5)');
+ // 3: mensaje urgente (11.2-18)
+ card(110,520,860,880,11.4,18.2,t,(x,y,w)=>{T('Lo que dice la llamada falsa',540,y+55,28,'#9aa3c7',{w:'600'});
+  [['"Mamá, tuve un problema…"',12.2],['"No le cuentes a nadie"',13.4],['"Necesito dinero YA"',14.6]].forEach(([s,a],i)=>{
+   pop(t,a,()=>{rr(x+50,y+110+i*130,w-100,100,50);X.fillStyle='rgba(255,255,255,.07)';X.fill();T(s,540,y+160+i*130,36,'#fff',{w:'700'});});});
+  [['MIEDO',15.4,x+190],['PRISA',16,x+430],['SECRETO',16.6,x+670]].forEach(([s,a,cx])=>pop(t,a,()=>chip(s,cx,y+560,RD,28)));
+  pop(t,16.9,()=>T('Quieren que no pienses',540,y+680,38,YL,{w:'800',g:YL}));
+  pop(t,17,()=>T('Quieren que no verifiques',540,y+740,38,YL,{w:'800',g:YL}));},'rgba(255,77,94,.5)');
+ // 4: cuelga y llama (18.2-26)
+ card(110,520,860,980,18.4,26,t,(x,y,w)=>{
+  if(t<21.2){T('Paso 1',540,y+60,28,GR,{w:'800'});X.beginPath();X.arc(540,y+300,130,0,7);X.fillStyle=RD;X.fill();
+   T('☎',540,y+305,110,'#fff',{w:'900'});T('CUELGA',540,y+520,70,RD,{w:'900',g:RD});T('No sigas la conversación',540,y+610,32,'#cfd6f2',{w:'600'});}
+  else{T('Paso 2',540,y+60,28,GR,{w:'800'});avatar(540,y+250,80,'#3b4bd1','HIJO');T('Contactos guardados',540,y+390,30,'#9aa3c7',{w:'600'});
+   T('Llama tú al número real',540,y+480,50,'#fff',{w:'900'});
+   const pp=Math.floor((t-21.5)*3);rr(x+90,y+560,w-180,100,50);X.fillStyle='rgba(62,224,138,.14)';X.fill();X.lineWidth=3;X.strokeStyle=GR;X.stroke();
+   T('+34 6•• ••• •••'.slice(0,Math.max(4,Math.min(16,4+pp))),540,y+610,42,GR,{f:M,w:'700'});
+   pop(t,23.6,()=>T('O pregunta algo que solo él sabría',540,y+740,32,YL,{w:'800'}));
+   pop(t,24.4,()=>T('Si no contesta, espera y vuelve a llamar',540,y+800,28,'#cfd6f2',{w:'600'}));}},'rgba(62,224,138,.5)');
+ // 5: palabra clave (26-32)
+ card(120,520,840,860,26.2,32,t,(x,y,w)=>{T('Palabra clave familiar',540,y+60,30,GR,{w:'800'});
+  const P=new Path2D('M540 '+(y+120)+' l120 44 v100 q0 100 -120 150 q-120 -50 -120 -150 v-100 z');X.save();X.lineWidth=8;X.strokeStyle=GR;X.shadowColor=GR;X.shadowBlur=30;X.stroke(P);X.globalAlpha=.18;X.fillStyle=GR;X.fill(P);X.restore();
+  T('🔒'.length?'✓':'',540,y+270,90,GR,{w:'900'});
+  pop(t,27.2,()=>{rr(x+120,y+470,w-240,100,50);X.fillStyle='rgba(255,255,255,.07)';X.fill();T('•••• ••••',540,y+520,52,'#fff',{f:M,w:'800'});});
+  [['Solo la sabe la familia',28.2],['No la publiques en redes',29.4],['Pídela en llamadas raras',30.4]].forEach(([s,a],i)=>pop(t,a,()=>T('✓ '+s,540,y+640+i*60,32,'#e6edff',{w:'700'})));},'rgba(62,224,138,.5)');
+ // 6: cierre (32-36)
+ card(140,540,800,760,32.2,D+1,t,(x,y,w)=>{T('Hoy mismo',540,y+70,34,YL,{w:'800'});
+  ['Elige tu palabra clave','Cuéntasela a tu familia','Enséñales este video'].forEach((s,i)=>{const on=t>32.8+i*.7,yy=y+170+i*120;X.beginPath();X.arc(x+90,yy,30,0,7);X.fillStyle=on?GR:'rgba(255,255,255,.1)';X.fill();if(on)T('✓',x+90,yy+2,34,'#0b1020',{w:'900'});T(s,x+150,yy,38,'#fff',{a:'left',w:'700'});});
+  const b=1+.04*Math.sin(t*8);X.save();X.translate(540,y+600);X.scale(b,b);chip('COMPARTE Y PROTEGE A LOS TUYOS',0,0,CY,30);X.restore();},'rgba(25,230,255,.5)');
+}
+
+function frame(t){X.setTransform(1,0,0,1,0,0);X.globalAlpha=1;const red=(t>4&&t<18)?1:0;bg(t,red);scenes(t);captions(t);hud(t);
+ for(const b of [4.2,11.2,18.2,26,32]){const d=Math.abs(t-b);if(d<.2){const k=1-d/.2;for(let i=0;i<10;i++){const y=rnd(i+Math.floor(t*60))*H,h=20+rnd(i+9)*100,dx=(rnd(i*3+Math.floor(t*60))-.5)*140*k;X.drawImage(C,0,y,W,h,dx,y,W,h);}X.fillStyle=`rgba(200,250,255,${.3*k*k})`;X.fillRect(0,0,W,H);}}
+ const f=1-pr(t,0,.4);if(f>0){X.fillStyle=`rgba(0,0,0,${f})`;X.fillRect(0,0,W,H);}}
+window.renderFrame=frame;
+let t0=performance.now();C.onclick=()=>t0=performance.now();
+(function loop(n){if(!window.EXPORT)frame(((n-t0)/1000)%D);requestAnimationFrame(loop);})(t0);
+</script></body></html>
