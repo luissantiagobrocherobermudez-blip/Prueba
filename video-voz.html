@@ -17,12 +17,12 @@ function T(s,x,y,size,col,o={}){X.save();X.font=(o.w||'700')+' '+size+'px '+(o.f
 function rr(x,y,w,h,r){X.beginPath();X.roundRect(x,y,w,h,r);}
 
 // ---- guion y subtítulos karaoke ----
-const SC=[[0.3,3.9,'Tu mamá puede recibir una llamada con TU voz pidiendo dinero.'],
- [4.2,10.8,'Hoy existen estafas que imitan voces con inteligencia artificial.'],
- [11.2,17.8,'Te piden dinero urgente, con miedo y con prisa.'],
- [18.2,25.6,'Qué hacer: cuelga y llama tú al número real de tu hijo.'],
- [26.0,31.6,'Acuerden una palabra clave familiar que solo ustedes conozcan.'],
- [32.0,35.7,'Elíjanla hoy y manda este video a tu familia.']];
+const SC=[[0.3,4.0,'Tu mamá puede recibir una llamada con TU voz pidiendo dinero.'],
+ [4.2,9.4,'Hoy existen estafas que imitan voces con inteligencia artificial.'],
+ [11.2,15.7,'Te piden dinero urgente, con miedo y con prisa.'],
+ [18.2,23.6,'Qué hacer: cuelga y llama tú al número real de tu hijo.'],
+ [26.0,30.7,'Acuerden una palabra clave familiar que solo ustedes conozcan.'],
+ [32.0,35.5,'Elíjanla hoy y manda este video a tu familia.']];
 const KEY=/^(TU|voz|imitan|urgente|prisa|cuelga|llama|real|palabra|clave|hoy)/i;
 const WORDS=[];SC.forEach(([a,b,s])=>{const w=s.split(' '),dt=(b-a)/w.length;
  for(let i=0;i<w.length;i+=5){const ch=w.slice(i,i+5).map((x,j)=>({s:x,t:a+(i+j)*dt}));ch.end=a+Math.min(w.length,i+5)*dt;WORDS.push(ch);}});
